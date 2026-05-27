@@ -47,6 +47,12 @@ class ModelConfig(Base):
     model_name: Mapped[str] = mapped_column(String(200))  # 上游模型名
     price_per_input: Mapped[float] = mapped_column(Float, default=0.0)  # 每1M输入token价格
     price_per_output: Mapped[float] = mapped_column(Float, default=0.0)  # 每1M输出token价格
+    model_type: Mapped[str] = mapped_column(String(50), default="chat")  # chat/image/embedding/rerank/audio/video
+    scene_tags: Mapped[str] = mapped_column(String(500), default="")  # 逗号分隔场景标签
+    context_length: Mapped[int] = mapped_column(default=0)  # 上下文窗口
+    parameter_size: Mapped[str] = mapped_column(String(50), default="")  # 参数量 如 "671B"
+    model_icon: Mapped[str] = mapped_column(String(500), default="")  # 模型图标URL
+    description: Mapped[str] = mapped_column(Text, default="")  # 模型介绍
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -14,8 +14,15 @@ class ModelResponse(BaseModel):
     id: int
     name: str
     display_name: str
+    provider: str
     price_per_input: float  # 每1M token
     price_per_output: float
+    model_type: str = "chat"  # chat/image/embedding/rerank/audio/video
+    scene_tags: str = ""  # 逗号分隔场景标签
+    context_length: int = 0
+    parameter_size: str = ""
+    model_icon: str = ""
+    description: str = ""
 
     class Config:
         from_attributes = True
