@@ -61,6 +61,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
         email=req.email,
         username=req.username,
         hashed_password=hash_password(req.password),
+        balance=1.0,  # 新用户赠送 1 元体验金
     )
     db.add(user)
     await db.commit()

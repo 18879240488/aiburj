@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.database import init_db
-from app.api.v1 import auth, billing, proxy, admin, models as models_api
+from app.api.v1 import auth, billing, proxy, admin, models as models_api, recharge
 
 
 @asynccontextmanager
@@ -33,6 +33,8 @@ app.include_router(billing.router, prefix="/api/v1", tags=["计费"])
 app.include_router(proxy.router, prefix="/v1", tags=["API代理"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["管理后台"])
 app.include_router(models_api.router, prefix="/api/v1/models", tags=["模型"])
+app.include_router(recharge.router, prefix="/api/v1", tags=["充值"])
+app.include_router(recharge.admin_router, prefix="/api/v1/admin", tags=["充值管理"])
 
 
 @app.get("/")
