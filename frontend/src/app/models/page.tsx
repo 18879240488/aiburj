@@ -14,16 +14,14 @@ interface ModelInfo {
 }
 
 const FALLBACK_MODELS: ModelInfo[] = [
-  { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", input_price: 15.00, output_price: 60.00, category: "chat", available: true },
-  { id: "gpt-4.1", name: "GPT-4.1", provider: "OpenAI", input_price: 10.00, output_price: 40.00, category: "chat", available: true },
-  { id: "claude-3.5-sonnet", name: "Claude 3.5 Sonnet", provider: "Anthropic", input_price: 12.00, output_price: 48.00, category: "chat", available: true },
-  { id: "claude-3-opus", name: "Claude 3 Opus", provider: "Anthropic", input_price: 18.00, output_price: 72.00, category: "chat", available: true },
   { id: "deepseek-v3", name: "DeepSeek V3", provider: "DeepSeek", input_price: 1.50, output_price: 6.00, category: "chat", available: true },
   { id: "deepseek-r1", name: "DeepSeek R1", provider: "DeepSeek", input_price: 2.00, output_price: 8.00, category: "reasoning", available: true },
-  { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", provider: "Google", input_price: 0.50, output_price: 2.00, category: "chat", available: true },
-  { id: "qwen-2.5", name: "Qwen 2.5", provider: "Alibaba", input_price: 1.00, output_price: 4.00, category: "chat", available: true },
-  { id: "gpt-4o-mini", name: "GPT-4o-mini", provider: "OpenAI", input_price: 0.60, output_price: 2.40, category: "chat", available: true },
-  { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google", input_price: 3.50, output_price: 14.00, category: "chat", available: true },
+  { id: "qwen-2.5", name: "Qwen 2.5", provider: "阿里云", input_price: 1.00, output_price: 4.00, category: "chat", available: true },
+  { id: "qwen-3", name: "Qwen 3", provider: "阿里云", input_price: 2.00, output_price: 8.00, category: "chat", available: true },
+  { id: "glm-4", name: "GLM-4", provider: "智谱AI", input_price: 1.20, output_price: 4.80, category: "chat", available: true },
+  { id: "yi-large", name: "Yi-Large", provider: "零一万物", input_price: 1.80, output_price: 7.20, category: "chat", available: true },
+  { id: "moonshot-v1", name: "Moonshot v1", provider: "月之暗面", input_price: 1.00, output_price: 4.00, category: "chat", available: true },
+  { id: "step-2", name: "Step-2", provider: "阶跃星辰", input_price: 1.50, output_price: 6.00, category: "reasoning", available: true },
 ];
 
 function providerColor(provider: string): string {

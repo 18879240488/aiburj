@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "aiburj — AI API Platform",
-  description: "Unified API access to the world's best AI models",
+  title: "aiburj — 国产大模型 API 聚合平台",
+  description: "统一接入 DeepSeek、Qwen、GLM 等国产大模型",
+  icons: { icon: "/logo.jpg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <nav className="glass" style={{ margin: "1rem", padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", color: "var(--text-primary)", fontWeight: 700, fontSize: "1.25rem" }}>
-            <span style={{ color: "var(--accent)" }}>◆</span> aiburj
+            <img src="/logo.jpg" alt="aiburj" style={{ width: 28, height: 28, borderRadius: 4 }} /> aiburj
           </a>
           <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
             <a href="/models" className="nav-link">模型</a>
