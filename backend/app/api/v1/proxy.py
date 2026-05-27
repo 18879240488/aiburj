@@ -11,9 +11,10 @@ import httpx
 
 from app.core.database import get_db
 from app.core.auth import get_current_user
+from app.core.ratelimit import check_rate_limit
 from app.models.user import User, ApiKey, ModelConfig, UsageLog
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(check_rate_limit)])
 
 
 async def verify_api_key(request: Request, db: AsyncSession) -> tuple[User, ApiKey]:
