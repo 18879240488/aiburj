@@ -11,6 +11,7 @@ router = APIRouter()
 
 
 class ModelResponse(BaseModel):
+    model_config = {'from_attributes': True, 'protected_namespaces': ()}
     id: int
     name: str
     display_name: str
@@ -23,9 +24,6 @@ class ModelResponse(BaseModel):
     parameter_size: str = ""
     model_icon: str = ""
     description: str = ""
-
-    class Config:
-        from_attributes = True
 
 
 @router.get("/", response_model=list[ModelResponse])

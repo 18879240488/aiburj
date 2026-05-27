@@ -91,7 +91,7 @@ export default function UsagePage() {
   // ─── Fetch real totals ──────────────────────────────────
   useEffect(() => {
     let cancelled = false;
-    fetch("http://localhost:8001/api/v1/usage", { credentials: "include" })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/usage`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("unavailable");
         return res.json();

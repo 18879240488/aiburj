@@ -28,7 +28,7 @@ export default function ApiKeysPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchKeys = useCallback(() => {
-    fetch("http://localhost:8001/api/v1/api-keys", { credentials: "include" })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/api-keys`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("unavailable");
         return res.json();
@@ -54,7 +54,7 @@ export default function ApiKeysPage() {
     if (!newKeyName.trim()) return;
     setCreating(true);
     try {
-      const res = await fetch("http://localhost:8001/api/v1/api-keys", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/api-keys`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -91,7 +91,7 @@ export default function ApiKeysPage() {
     if (!confirm("确定要删除这个 API Key 吗？此操作不可撤销。")) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`http://localhost:8001/api/v1/api-keys/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/api-keys/${id}`, {
         method: "DELETE",
         credentials: "include",
       });

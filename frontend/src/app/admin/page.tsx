@@ -19,7 +19,7 @@ async function fetchAdmin<T>(path: string): Promise<T | null> {
   const token = getToken();
   if (!token) return null;
   try {
-    const res = await fetch(`http://localhost:8001/api/v1/admin${path}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/admin${path}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return null;

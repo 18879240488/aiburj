@@ -16,6 +16,7 @@ router = APIRouter(dependencies=[Depends(get_admin_user)])
 
 
 class ModelCreateRequest(BaseModel):
+    model_config = {'protected_namespaces': ()}
     name: str
     display_name: str
     provider: str
@@ -34,6 +35,7 @@ class ModelCreateRequest(BaseModel):
 
 
 class ModelUpdateRequest(BaseModel):
+    model_config = {'protected_namespaces': ()}
     display_name: Optional[str] = None
     provider: Optional[str] = None
     upstream_base_url: Optional[str] = None
@@ -51,6 +53,7 @@ class ModelUpdateRequest(BaseModel):
 
 
 class ModelResponse(BaseModel):
+    model_config = {'from_attributes': True, 'protected_namespaces': ()}
     id: int
     name: str
     display_name: str
@@ -65,9 +68,6 @@ class ModelResponse(BaseModel):
     parameter_size: str = ""
     model_icon: str = ""
     description: str = ""
-
-    class Config:
-        from_attributes = True
 
 
 class UserResponse(BaseModel):

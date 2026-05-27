@@ -21,7 +21,7 @@ async function fetchAdmin<T>(path: string, options?: RequestInit): Promise<T | n
   const token = getToken();
   if (!token) return null;
   try {
-    const res = await fetch(`http://localhost:8001/api/v1/admin${path}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/admin${path}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",

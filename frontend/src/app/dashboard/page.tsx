@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("http://localhost:8001/api/v1/auth/me", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/auth/me`, {
       credentials: "include",
     })
       .then((res) => {

@@ -63,7 +63,7 @@ export default function RechargePage() {
     };
 
     // Fetch plans
-    fetch("http://localhost:8001/api/v1/plans", { credentials: "include" })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/plans`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("unavailable");
         return res.json();
@@ -78,7 +78,7 @@ export default function RechargePage() {
       .finally(() => { plansDone = true; maybeDone(); });
 
     // Fetch orders
-    fetch("http://localhost:8001/api/v1/orders", { credentials: "include" })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/orders`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("unavailable");
         return res.json();
@@ -99,7 +99,7 @@ export default function RechargePage() {
   const handleRecharge = async (plan: Plan) => {
     setRechargingId(plan.id);
     try {
-      const res = await fetch("http://localhost:8001/api/v1/orders", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/orders`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -116,7 +116,7 @@ export default function RechargePage() {
         alert(`订单已创建！金额: ¥${plan.amount}，到账: ¥${plan.total || (plan.amount + (plan.bonus || 0))}`);
       }
       // Refresh orders
-      fetch("http://localhost:8001/api/v1/orders", { credentials: "include" })
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/orders`, { credentials: "include" })
         .then((res) => res.json())
         .then((data: Order[]) => { if (Array.isArray(data) && data.length > 0) setOrders(data); })
         .catch(() => {});
