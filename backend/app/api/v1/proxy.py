@@ -1,9 +1,10 @@
-"""OpenAI 兼容 API 代理 - 核心转发逻辑"""
+"""OpenAI 兼容 API 代理 - 核心转发逻辑（支持 SSE 流式）"""
 import json
 import time
-from typing import Optional
+from typing import Optional, AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import httpx
@@ -48,38 +49,22 @@ async def get_model_config(model_name: str, db: AsyncSession) -> ModelConfig:
     return config
 
 
-@router.post("/chat/completions")
-async def chat_completions(request: Request, db: AsyncSession = Depends(get_db)):
-    """OpenAI 兼容的聊天补全接口"""
-    user, api_key = await verify_api_key(request, db)
-    body = await request.json()
-    model_name = body.get("model", "")
-
-    model_config = await get_model_config(model_name, db)
-
-    # 检查余额
-    estimated_cost = 0.001  # 预扣最小值
-    if user.balance < estimated_cost:
-        raise HTTPException(status_code=402, detail="Insufficient balance")
-
-    # 转发到上游
-    headers = {
-        "Authorization": f"Bearer {model_config.upstream_api_key}",
-        "Content-Type": "application/json",
-    }
-    upstream_url = f"{model_config.upstream_base_url}/chat/completions"
-
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(upstream_url, json=body, headers=headers)
-        result = response.json()
-
-    # 统计 token
-    prompt_tokens = result.get("usage", {}).get("prompt_tokens", 0)
-    completion_tokens = result.get("usage", {}).get("completion_tokens", 0)
-    cost = (prompt_tokens / 1_000_000 * model_config.price_per_input +
+def calc_cost(model_config: ModelConfig, prompt_tokens: int, completion_tokens: int) -> float:
+    return (prompt_tokens / 1_000_000 * model_config.price_per_input +
             completion_tokens / 1_000_000 * model_config.price_per_output)
 
-    # 记录用量
+
+async def save_usage(
+    db: AsyncSession,
+    user: User,
+    api_key: ApiKey,
+    model_config: ModelConfig,
+    prompt_tokens: int,
+    completion_tokens: int,
+    cost: float,
+    ip_address: Optional[str] = None,
+):
+    """记录用量并扣费"""
     log = UsageLog(
         user_id=user.id,
         api_key_id=api_key.id,
@@ -88,15 +73,100 @@ async def chat_completions(request: Request, db: AsyncSession = Depends(get_db))
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
         cost=cost,
-        ip_address=request.client.host if request.client else None,
+        ip_address=ip_address,
     )
     db.add(log)
-
-    # 扣费
     user.balance -= cost
     await db.commit()
 
-    return result
+
+@router.post("/chat/completions")
+async def chat_completions(request: Request, db: AsyncSession = Depends(get_db)):
+    """OpenAI 兼容的聊天补全接口（支持 SSE 流式）"""
+    user, api_key = await verify_api_key(request, db)
+    body = await request.json()
+    model_name = body.get("model", "")
+    is_stream = body.get("stream", False)
+
+    model_config = await get_model_config(model_name, db)
+
+    # 检查余额
+    if user.balance < 0.001:
+        raise HTTPException(status_code=402, detail="Insufficient balance")
+
+    headers = {
+        "Authorization": f"Bearer {model_config.upstream_api_key}",
+        "Content-Type": "application/json",
+    }
+    upstream_url = f"{model_config.upstream_base_url}/chat/completions"
+
+    if is_stream:
+        # ===== SSE 流式响应 =====
+        async def stream_generator() -> AsyncGenerator[str, None]:
+            from app.core.database import async_session as _async_session
+            prompt_tokens = 0
+            completion_tokens = 0
+
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                async with client.stream("POST", upstream_url, json=body, headers=headers) as response:
+                    if response.status_code != 200:
+                        error_body = await response.aread()
+                        yield f"data: {error_body.decode()}\n\n"
+                        yield "data: [DONE]\n\n"
+                        return
+
+                    async for line in response.aiter_lines():
+                        if not line:
+                            continue
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                yield "data: [DONE]\n\n"
+                                break
+
+                            try:
+                                chunk = json.loads(data_str)
+                                usage = chunk.get("usage")
+                                if usage:
+                                    prompt_tokens = usage.get("prompt_tokens", 0)
+                                    completion_tokens = usage.get("completion_tokens", 0)
+                            except json.JSONDecodeError:
+                                pass
+
+                            yield f"data: {data_str}\n\n"
+
+            # 用量入库（独立会话，避免 stream 结束后 session 已关闭）
+            if prompt_tokens > 0 or completion_tokens > 0:
+                cost = calc_cost(model_config, prompt_tokens, completion_tokens)
+                ip = request.client.host if request.client else None
+                async with _async_session() as stream_db:
+                    await save_usage(stream_db, user, api_key, model_config,
+                                     prompt_tokens, completion_tokens, cost, ip)
+
+        return StreamingResponse(
+            stream_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            }
+        )
+    else:
+        # ===== 非流式（原有逻辑） =====
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(upstream_url, json=body, headers=headers)
+            result = response.json()
+
+        prompt_tokens = result.get("usage", {}).get("prompt_tokens", 0)
+        completion_tokens = result.get("usage", {}).get("completion_tokens", 0)
+        cost = calc_cost(model_config, prompt_tokens, completion_tokens)
+
+        ip = request.client.host if request.client else None
+        await save_usage(db, user, api_key, model_config,
+                         prompt_tokens, completion_tokens, cost, ip)
+
+        return result
 
 
 @router.post("/completions")
@@ -122,8 +192,7 @@ async def completions(request: Request, db: AsyncSession = Depends(get_db)):
 
     prompt_tokens = result.get("usage", {}).get("prompt_tokens", 0)
     completion_tokens = result.get("usage", {}).get("completion_tokens", 0)
-    cost = (prompt_tokens / 1_000_000 * model_config.price_per_input +
-            completion_tokens / 1_000_000 * model_config.price_per_output)
+    cost = calc_cost(model_config, prompt_tokens, completion_tokens)
 
     log = UsageLog(
         user_id=user.id, api_key_id=api_key.id, model_id=model_config.id,
