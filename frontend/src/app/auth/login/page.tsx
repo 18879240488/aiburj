@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, token } = useAuth();
+
+  // 已登录则直接跳转
+  useEffect(() => {
+    if (token) router.push("/dashboard");
+  }, [token, router]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,23 +46,7 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: email.trim(), password }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.detail || data?.message || `登录失败 (${res.status})`);
-      }
-
-      const data = await res.json();
-      const token = data.access_token || data.token;
-      if (token) {
-        localStorage.setItem("aiburj_token", token);
-      }
+      await login(email.trim(), password);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "网络错误，请稍后重试");
@@ -90,6 +81,8 @@ export default function LoginPage() {
     color: "var(--text-secondary)",
     marginBottom: "0.4rem",
   };
+
+  if (token) return null; // 等待 redirect
 
   return (
     <div

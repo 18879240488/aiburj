@@ -4,7 +4,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, update
 from pydantic import BaseModel
 
 from app.core.database import get_db
@@ -151,21 +151,28 @@ async def admin_confirm_recharge(
     req: AdminConfirmRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """管理后台：确认充值到账"""
-    result = await db.execute(select(RechargeOrder).where(RechargeOrder.id == req.order_id))
-    order = result.scalar_one_or_none()
-    if not order:
-        raise HTTPException(status_code=404, detail="订单不存在")
-    if order.status != "pending":
+    """管理后台：确认充值到账（原子操作，防止竞态）"""
+    # 原子更新：仅当 status=pending 时才改为 success
+    stmt = (
+        update(RechargeOrder)
+        .where(RechargeOrder.id == req.order_id, RechargeOrder.status == "pending")
+        .values(status="success", paid_at=datetime.utcnow())
+        .execution_options(synchronize_session="fetch")
+    )
+    result = await db.execute(stmt)
+    if result.rowcount == 0:
+        # 检查订单是否存在
+        check = await db.execute(select(RechargeOrder).where(RechargeOrder.id == req.order_id))
+        order = check.scalar_one_or_none()
+        if not order:
+            raise HTTPException(status_code=404, detail="订单不存在")
         raise HTTPException(status_code=400, detail="订单已处理")
 
-    # 更新订单状态
-    order.status = "success"
-    order.paid_at = datetime.utcnow()
-
     # 给用户加余额
-    result = await db.execute(select(User).where(User.id == order.user_id))
-    user = result.scalar_one_or_none()
+    order_result = await db.execute(select(RechargeOrder).where(RechargeOrder.id == req.order_id))
+    order = order_result.scalar_one()
+    user_result = await db.execute(select(User).where(User.id == order.user_id))
+    user = user_result.scalar_one_or_none()
     if user:
         user.balance += order.amount
 
@@ -178,14 +185,22 @@ async def admin_reject_recharge(
     req: AdminConfirmRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """管理后台：拒绝充值"""
-    result = await db.execute(select(RechargeOrder).where(RechargeOrder.id == req.order_id))
-    order = result.scalar_one_or_none()
-    if not order:
-        raise HTTPException(status_code=404, detail="订单不存在")
-    if order.status != "pending":
+    """管理后台：拒绝充值（原子操作，防止竞态）"""
+    stmt = (
+        update(RechargeOrder)
+        .where(RechargeOrder.id == req.order_id, RechargeOrder.status == "pending")
+        .values(status="failed")
+        .execution_options(synchronize_session="fetch")
+    )
+    result = await db.execute(stmt)
+    if result.rowcount == 0:
+        check = await db.execute(select(RechargeOrder).where(RechargeOrder.id == req.order_id))
+        order = check.scalar_one_or_none()
+        if not order:
+            raise HTTPException(status_code=404, detail="订单不存在")
         raise HTTPException(status_code=400, detail="订单已处理")
 
-    order.status = "failed"
     await db.commit()
+    order_result = await db.execute(select(RechargeOrder).where(RechargeOrder.id == req.order_id))
+    order = order_result.scalar_one()
     return {"status": "ok", "order_no": order.order_no}

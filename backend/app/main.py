@@ -21,7 +21,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,11 +29,11 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证"])
-app.include_router(billing.router, prefix="/api/v1", tags=["计费"])
+app.include_router(billing.router, prefix="/api/v1/billing", tags=["计费"])
 app.include_router(proxy.router, prefix="/v1", tags=["API代理"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["管理后台"])
 app.include_router(models_api.router, prefix="/api/v1/models", tags=["模型"])
-app.include_router(recharge.router, prefix="/api/v1", tags=["充值"])
+app.include_router(recharge.router, prefix="/api/v1/recharge", tags=["充值"])
 app.include_router(recharge.admin_router, prefix="/api/v1/admin", tags=["充值管理"])
 
 

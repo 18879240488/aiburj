@@ -1,4 +1,6 @@
 """计费相关接口"""
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
@@ -95,12 +97,13 @@ async def get_usage(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    since = datetime.utcnow() - timedelta(days=days)
     result = await db.execute(
         select(
             func.coalesce(func.sum(UsageLog.prompt_tokens), 0),
             func.coalesce(func.sum(UsageLog.completion_tokens), 0),
             func.coalesce(func.sum(UsageLog.cost), 0),
-        ).where(UsageLog.user_id == user.id)
+        ).where(UsageLog.user_id == user.id, UsageLog.created_at >= since)
     )
     row = result.one()
     return UsageSummary(

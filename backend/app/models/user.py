@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, Float, DateTime, Text
+from sqlalchemy import String, Boolean, Float, Numeric, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.sqlite import TEXT
 
@@ -16,7 +16,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
-    balance: Mapped[float] = mapped_column(Float, default=0.0)
+    balance: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -45,8 +45,8 @@ class ModelConfig(Base):
     upstream_base_url: Mapped[str] = mapped_column(String(500))  # 上游 API 地址
     upstream_api_key: Mapped[str] = mapped_column(String(500))  # 上游 API Key
     model_name: Mapped[str] = mapped_column(String(200))  # 上游模型名
-    price_per_input: Mapped[float] = mapped_column(Float, default=0.0)  # 每1M输入token价格
-    price_per_output: Mapped[float] = mapped_column(Float, default=0.0)  # 每1M输出token价格
+    price_per_input: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)  # 每1M输入token价格
+    price_per_output: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)  # 每1M输出token价格
     model_type: Mapped[str] = mapped_column(String(50), default="chat")  # chat/image/embedding/rerank/audio/video
     scene_tags: Mapped[str] = mapped_column(String(500), default="")  # 逗号分隔场景标签
     context_length: Mapped[int] = mapped_column(default=0)  # 上下文窗口
@@ -69,7 +69,7 @@ class UsageLog(Base):
     model_name: Mapped[str] = mapped_column(String(100))
     prompt_tokens: Mapped[int] = mapped_column(default=0)
     completion_tokens: Mapped[int] = mapped_column(default=0)
-    cost: Mapped[float] = mapped_column(Float, default=0.0)
+    cost: Mapped[float] = mapped_column(Numeric(10, 4), default=0.0)
     ip_address: Mapped[str] = mapped_column(String(45), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -81,7 +81,7 @@ class RechargeOrder(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(index=True)
     order_no: Mapped[str] = mapped_column(String(64), unique=True, index=True)
-    amount: Mapped[float] = mapped_column(Float)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2))
     pay_method: Mapped[str] = mapped_column(String(20))  # alipay, wechat
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, success, failed
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

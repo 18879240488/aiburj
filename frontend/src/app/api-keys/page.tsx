@@ -12,13 +12,8 @@ interface ApiKey {
   is_active?: boolean;
 }
 
-const FALLBACK_KEYS: ApiKey[] = [
-  { id: "k1", name: "默认 Key", key_prefix: "sk-a1b2...", created_at: "2026-05-20T10:30:00", last_used_at: "2026-05-27T08:12:00", is_active: true },
-  { id: "k2", name: "测试 Key", key_prefix: "sk-c3d4...", created_at: "2026-05-22T14:00:00", last_used_at: "2026-05-26T18:45:00", is_active: true },
-];
-
 export default function ApiKeysPage() {
-  const [keys, setKeys] = useState<ApiKey[]>(FALLBACK_KEYS);
+  const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
@@ -28,20 +23,20 @@ export default function ApiKeysPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchKeys = useCallback(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/api-keys`, { credentials: "include" })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/billing/api-keys`, { credentials: "include" })
       .then((res) => {
-        if (!res.ok) throw new Error("unavailable");
+        if (!res.ok) throw new Error(`请求失败 (${res.status})`);
         return res.json();
       })
       .then((data: ApiKey[]) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setKeys(data);
         }
         setError("");
       })
       .catch((err) => {
-        console.warn("API Keys fetch failed, using fallback:", err);
-        setError("使用本地数据");
+        console.error("API Keys fetch failed:", err);
+        setError("加载 API Keys 失败，请稍后重试");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -54,7 +49,7 @@ export default function ApiKeysPage() {
     if (!newKeyName.trim()) return;
     setCreating(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/api-keys`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/billing/api-keys`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -91,7 +86,7 @@ export default function ApiKeysPage() {
     if (!confirm("确定要删除这个 API Key 吗？此操作不可撤销。")) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/api-keys/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/billing/api-keys/${id}`, {
         method: "DELETE",
         credentials: "include",
       });

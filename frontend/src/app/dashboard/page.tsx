@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 /* ---------- API response types ---------- */
 
@@ -31,11 +33,6 @@ interface OrderItem {
 /* ---------- helpers ---------- */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("aiburj_token");
-}
 
 function formatDate(iso: string | undefined | null): string {
   if (!iso) return "—";
@@ -96,6 +93,8 @@ function Skeleton({ width, height, style }: { width?: string; height?: string; s
 /* ---------- page ---------- */
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { token, loading: authLoading } = useAuth();
   const [user, setUser] = useState<UserData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [orders, setOrders] = useState<OrderItem[] | null>(null);
@@ -110,7 +109,6 @@ export default function DashboardPage() {
     setLoading(true);
     setError("");
 
-    const token = getToken();
     if (!token) {
       setError("未登录，请先登录");
       setLoading(false);
@@ -152,11 +150,18 @@ export default function DashboardPage() {
         setError(err.message || "加载失败，请重试");
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [token]);
+
+  // 重定向未登录用户
+  useEffect(() => {
+    if (!authLoading && !token) {
+      router.push("/auth/login");
+    }
+  }, [authLoading, token, router]);
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    if (token) fetchAll();
+  }, [fetchAll, token]);
 
   /* ---------- render: loading skeleton ---------- */
 

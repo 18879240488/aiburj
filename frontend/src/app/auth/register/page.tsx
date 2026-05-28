@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register, token } = useAuth();
+
+  // 已登录则直接跳转
+  useEffect(() => {
+    if (token) router.push("/dashboard");
+  }, [token, router]);
 
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -63,27 +70,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/api/v1/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          email: email.trim(),
-          username: username.trim(),
-          password,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.detail || data?.message || `注册失败 (${res.status})`);
-      }
-
-      const data = await res.json();
-      const token = data.access_token || data.token;
-      if (token) {
-        localStorage.setItem("aiburj_token", token);
-      }
+      await register(email.trim(), username.trim(), password);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "网络错误，请稍后重试");
@@ -118,6 +105,8 @@ export default function RegisterPage() {
     color: "var(--text-secondary)",
     marginBottom: "0.4rem",
   };
+
+  if (token) return null; // 等待 redirect
 
   return (
     <div

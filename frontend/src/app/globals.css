@@ -4,6 +4,7 @@
 :root {
   --bg-primary: #060b14;
   --bg-secondary: #0d1424;
+  --bg-tertiary: #1a2740;
   --bg-card: #111827;
   --bg-card-hover: #1a2332;
   --border: #1e2d45;
@@ -121,6 +122,11 @@ body {
   50% { box-shadow: 0 0 20px var(--accent-glow); }
 }
 .glow { animation: glow 2s ease-in-out infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
 
 /* Navigation */
 .nav-link {
